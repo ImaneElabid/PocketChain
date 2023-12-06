@@ -24,6 +24,7 @@ class Node:
 
 
         self.ready_subscribe_sample = set()
+        self.ready_delivered = False
         self.ready_sample = set()
         self.delivery_sample = set()
 
@@ -60,9 +61,7 @@ class Node:
             self.echo_subscribe_sample.add(source)
 
         elif event == "Echo":
-            print(f"{self} << Echo :: {source}")
             if source in self.echo_sample and self.echo_replies[source] is None:
-                print(f"{self} ********** Echo :: {source}")
                 self.echo_replies[source] = message
                 self.check_echo(message)
 
@@ -83,18 +82,15 @@ class Node:
             if source in self.ready_sample:
                 if reply not in self.ready_replies[source]:
                     self.ready_replies[source].add(reply)
-                    print(f"{self} ******** Ready :: {source}")
                 self.check_ready(message)
             if source in self.delivery_sample:
                 # Add the reply only if it's not already present
                 if reply not in self.delivery_replies[source]:
                     self.delivery_replies[source].add(reply)
-                    print(f"{self} ******** Delivery :: {source}")
                 self.check_delivery(message)
 
         elif event == "achieved consensus":
-            print(f"{self} -> {event}: <{message}>")#
-
+            pass
         elif event == "Broadcast":
             self.dispatch(message)
 
@@ -119,18 +115,16 @@ class Node:
 
         self.ready_sample = self.sample_and_send("ReadySubscribe", self.R)
         self.ready_replies = {node_id: set() for node_id in self.ready_sample}
-        print(f"{(self)} ready sample: {self.ready_sample}")
 
         self.delivery_sample = self.sample_and_send("ReadySubscribe", self.D)
         self.delivery_replies = {node_id: set() for node_id in self.delivery_sample}
-        print(f"{(self)} delivery sample: {self.delivery_sample}")
 
     def dispatch(self, message):
         if self.gossip is None:
             self.gossip = message
             for target in self.gossip_sample:
                 self.send(target, "Gossip", message, self)
-        self.receive("delivered a gossip", message)
+            self.receive("delivered a gossip", message)
 
     def check_echo(self,message):
         # Count the number of echo replies that match self.echo
@@ -146,6 +140,7 @@ class Node:
             if ready_count >= self.R_tilda and not self.delivered and not self.already_executed_flag:
                 self.already_executed_flag = True
                 self.ready.add(message)
+                self.ready_delivered = True
                 for target in self.ready_subscribe_sample:
                     self.send(target, "Ready", message, self)
 
@@ -159,8 +154,25 @@ class Node:
     def node_thread_init(self):
         self.init()
 
+    def broadcast_malicious(self, nodes):
+        # Choose a random node to act maliciously
+        malicious_node = random.choice(nodes)
+        print(f"{malicious_node} is broadcasting conflicting messages....")
 
+        # Divide the nodes into two subsets
+        half = len(nodes) // 2
+        first_half = nodes[:half]
+        second_half = nodes[half:]
 
+        message1= "A"
+        message2= "B"
+        # Send the first message to the first half of nodes
+        for node in first_half:
+            malicious_node.send(node, "Gossip", message1, malicious_node)
+
+        # Send the second message to the second half of nodes
+        for node in second_half:
+            malicious_node.send(node, "Gossip", message2, malicious_node)
 
         # Special methods
     def __repr__(self):
