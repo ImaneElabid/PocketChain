@@ -36,12 +36,12 @@ if __name__ == "__main__":
         thread.join()
         # Start gossip from this node
 
-    # starter_node = random.choice(nodes)
-    # print(f"{starter_node} is broadcasting....")
-    # message = f"Node {starter_node.id} is a leader"
-    # starter_node.receive("Broadcast", message)
+    starter_node = random.choice(nodes)
+    print(f"{starter_node} is broadcasting....")
+    message = f"Node {starter_node.id} is a leader"
+    starter_node.receive("Broadcast", message)
 
-    Node.broadcast_malicious(Node, nodes)
+    # Node.broadcast_malicious(Node, nodes)
 
 
     # Display messages

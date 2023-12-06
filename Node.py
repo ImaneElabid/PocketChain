@@ -77,16 +77,14 @@ class Node:
             self.ready_subscribe_sample.add(source)
 
         elif event == "Ready":
-            #print(f"{self} << Ready :: {source}")
-            reply=message
             if source in self.ready_sample:
-                if reply not in self.ready_replies[source]:
-                    self.ready_replies[source].add(reply)
+                if message not in self.ready_replies[source]:
+                    self.ready_replies[source].add(message)
                 self.check_ready(message)
             if source in self.delivery_sample:
                 # Add the reply only if it's not already present
-                if reply not in self.delivery_replies[source]:
-                    self.delivery_replies[source].add(reply)
+                if message not in self.delivery_replies[source]:
+                    self.delivery_replies[source].add(message)
                 self.check_delivery(message)
 
         elif event == "achieved consensus":
@@ -107,11 +105,9 @@ class Node:
         self.gossip_sample = set(self.omega(self.G))
         for target in self.gossip_sample:
             self.send(target, "GossipSubscribe", None, self)
-        # print(f"{(self)} gossip sample: {self.gossip_sample}")
 
         self.echo_sample = self.sample_and_send("EchoSubscribe", self.E)
         self.echo_replies = {node: None for node in self.echo_sample}
-        #print(f"{(self)} echo sample: {self.echo_sample}")
 
         self.ready_sample = self.sample_and_send("ReadySubscribe", self.R)
         self.ready_replies = {node_id: set() for node_id in self.ready_sample}
