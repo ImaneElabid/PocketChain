@@ -33,18 +33,18 @@ class ReadyBroadcast:
 
     def handle(self, event, message, source):
         if event == "delivered an echo":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}>  -> CH#'{self.channel_id[:4]}..'")#
             self.ready.add(message)
             for node in self.ready_subscribe_sample:
                 self.node.send(node, "Ready", message, self.node, self.channel_id)
         elif event == "ReadySubscribe":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             for message in self.ready:
                 self.node.send(source, "Ready", message, self.node, self.channel_id)
             self.ready_subscribe_sample.add(source)
 
         elif event == "Ready":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             if source in self.ready_sample:
                 if message not in self.ready_replies[source]:
                     self.ready_replies[source].add(message)
@@ -56,8 +56,7 @@ class ReadyBroadcast:
                 self.check_delivery(message)
 
         elif event == "achieved consensus":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
-            print(f"{self.node} delivered {message}")
+            print(f"{self.node} -> {event}: <{message}> ")#
 
 
 

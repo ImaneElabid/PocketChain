@@ -9,7 +9,6 @@ class GossipBroadcast:
         self.gossip_sample = set()
         self.gossip = None
         self.channel_id = channel_id
-        #self.init()
 
     def init(self):
         self.gossip_sample = set(Param.omega(Param.all_nodes, Param.G))
@@ -28,11 +27,11 @@ class GossipBroadcast:
 
     def handle(self, event, message, source):
         if event == "Broadcast":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            print(f"{self.node} -> {event}: <{message}>  -> CH#'{self.channel_id[:4]}..'")#
             self.dispatch(message)
 
         elif event == "GossipSubscribe":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            #print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             if self.gossip is not None:
                 message = self.gossip
                 self.node.send(source, "Gossip", message, self.node, self.channel_id)
@@ -40,8 +39,6 @@ class GossipBroadcast:
 
         elif event == "Gossip":
             self.dispatch(message)
-
-
 
     def __repr__(self):
         return f"GB({self.channel_id[:4]})"

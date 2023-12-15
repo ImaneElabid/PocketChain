@@ -26,21 +26,21 @@ class EchoBroadcast:
 
     def handle(self, event, message, source):
         if event == "delivered a gossip":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}>  -> CH#'{self.channel_id[:4]}..'")#
             self.echo = message
             for target in self.echo_subscribe_sample:
                 self.node.send(target, "Echo", message, self.node, self.channel_id)
             self.check_echo(message)
 
         elif event == "EchoSubscribe":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             if self.echo is not None:
                 message = self.echo
                 self.node.send(source, "Echo", message, self.node, self.channel_id)
             self.echo_subscribe_sample.add(source)
 
         elif event == "Echo":
-            print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             if source in self.echo_sample and self.echo_replies[source] is None:
                 self.echo_replies[source] = message
                 self.check_echo(message)

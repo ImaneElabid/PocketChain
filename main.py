@@ -17,17 +17,20 @@ if __name__ == "__main__":
 
     sender = random.choice(Param.all_nodes)
     print(f"{sender} is broadcasting....")
-    message = f"{sender} is a leader"
+    message1 = f"Hello"
+    message2 = f"Bye"
+    messages= [message1,message2]
 
     threads = []
-    for node in Param.all_nodes:
-        thread = threading.Thread(target=node.create_and_broadcast, args=(message, sender,))
-        threads.append(thread)
-        thread.start()
+    for m in messages:
+        for node in Param.all_nodes:
+            thread = threading.Thread(target=node.create_and_broadcast, args=(m, sender,))
+            threads.append(thread)
+            thread.start()
 
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
 
     # Display messages
     # Check how many nodes received the message

@@ -17,13 +17,11 @@ class Node:
         self.routing_table = RoutingTable(self)
 
     ##########################################################################
-
     def create_and_broadcast(self, message, sender):
         if self == sender:
             hid = Param.hid(message)
             channel = self.routing_table.add_channel(hid)
-            channel.ready_layer.init()
-            time.sleep(0.05)
+            time.sleep(0.01)
             channel.ready_layer.broadcast(message)
 
     def send(self, target, event, message, source=None, hid=None):
@@ -52,10 +50,6 @@ class Node:
         return sampled_nodes
 
         # Special methods
-
-    def node_thread_init(self, sender, message):
-        pass
-
     def __repr__(self):
         return f"Node({self.id})"
 

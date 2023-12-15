@@ -16,7 +16,7 @@ class RoutingTable:
         ready_layer = ReadyBroadcast(self.node, echo_layer, channel_id)
         channel = Map({'gossip_layer': gossip_layer, 'echo_layer': echo_layer, 'ready_layer': ready_layer})
         self.table[channel_id] = channel
-        print(f' Blabla{self.table} ')
+        ready_layer.init()
         return channel
 
     def remove_channel(self, h_id):
