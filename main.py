@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     threads = []
     for node in Param.all_nodes:
-        thread = threading.Thread(target=node.node_thread_init, args=(sender,message,))
+        thread = threading.Thread(target=node.create_and_broadcast, args=(message, sender,))
         threads.append(thread)
         thread.start()
 
@@ -42,4 +42,3 @@ if __name__ == "__main__":
     # print(f"{delivered_count} / {Param.N} nodes delivered the message")
     # if delivered_count < Param.N:
     #     logging.warning("Not all nodes have successfully delivered the message")
-

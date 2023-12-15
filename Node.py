@@ -1,16 +1,11 @@
 import logging
 import random
-import threading
 import time
+import threading
 
 from InputsConfig import InputsConfig as Param
 
-from GossipBroadcast import GossipBroadcast
-from EchoBroadcast import EchoBroadcast
-from ReadyBroadcast import ReadyBroadcast
 from RoutingTable import RoutingTable
-
-random.seed(10)
 
 
 class Node:
@@ -19,29 +14,36 @@ class Node:
     def __init__(self, node_id):
         # Node initialization
         self.id = node_id
-        self.routing_table = RoutingTable()
+        self.routing_table = RoutingTable(self)
 
     ##########################################################################
+
+    def create_and_broadcast(self, message, sender):
+        if self == sender:
+            hid = Param.hid(message)
+            channel = self.routing_table.add_channel(hid)
+            channel.ready_layer.init()
+            time.sleep(0.05)
+            channel.ready_layer.broadcast(message)
 
     def send(self, target, event, message, source=None, hid=None):
         target.receive(event, message, source, hid)
 
     def receive(self, event, message, source=None, hid=None):
         # Retrieve the broadcast layers for this h_id
-        if hid in self.routing_table:
-            broadcast_layers = self.routing_table.get_instance(hid)
-            if broadcast_layers:
-                gossip_layer, echo_layer, ready_layer = broadcast_layers
-
-                if event in ['Broadcast', 'GossipSubscribe', 'Gossip']:
-                    gossip_layer.handle(event, message, source)
-                elif event in ['delivered a gossip', 'EchoSubscribe', 'Echo']:
-                    echo_layer.handle(event, message, source)
-                elif event in ['delivered an echo', 'ReadySubscribe', 'Ready', 'achieved consensus']:
-                    ready_layer.handle(event, message, source)
+        if self.routing_table.channel_exist(hid):
+            channel = self.routing_table.get_channel(hid)
         else:
-            # handle the case where the h_id is not found in the routing table
+            channel = self.routing_table.add_channel(hid)
+        self.handle_request(channel, event, message, source)
 
+    def handle_request(self, channel, event, message, source=None):
+        if event in ['Broadcast', 'GossipSubscribe', 'Gossip']:
+            channel.gossip_layer.handle(event, message, source)
+        elif event in ['delivered a gossip', 'EchoSubscribe', 'Echo']:
+            channel.echo_layer.handle(event, message, source)
+        elif event in ['delivered an echo', 'ReadySubscribe', 'Ready', 'achieved consensus']:
+            channel.ready_layer.handle(event, message, source)
 
     def sample_and_send(self, message, size, hid):
         sampled_nodes = Param.omega(Param.all_nodes, size)
@@ -53,16 +55,6 @@ class Node:
 
     def node_thread_init(self, sender, message):
         pass
-
-
-    def create_and_broadcast(self, message):
-        hid = Param.hid(message)
-        self.routing_table.add_instance(hid, [])  # Add the top layer instance to the routing table
-        gossip_layer = GossipBroadcast(self, hid)
-        echo_layer = EchoBroadcast(self, gossip_layer, hid)
-        ready_layer = ReadyBroadcast(self, echo_layer, hid)
-        # TODO how to add Br instances to RT
-        ready_layer.broadcast(message)
 
     def __repr__(self):
         return f"Node({self.id})"
