@@ -27,8 +27,38 @@ class GossipBroadcast:
 
     def handle(self, event, message, source):
         if event == "Broadcast":
-            print(f"{self.node} -> {event}: <{message}>  -> CH#'{self.channel_id[:4]}..'")#
+            logging.info(f"{self.node} -> {event}: <{message}>  -> Channel: <{self.channel_id[:4]}..>")#
             self.dispatch(message)
+
+        elif event == "GossipSubscribe":
+            if self.gossip is not None:
+                message = self.gossip
+                self.node.send(source, "Gossip", message, self.node, self.channel_id)
+            self.gossip_sample.add(source)
+
+        elif event == "Gossip":
+            # print(f"{self.node} -> {event}: <{message}> == <{self.channel_id[:4]}>")#
+            self.dispatch(message)
+
+    def byz_dispatch(self, message1="A", message2="B"):
+        gossip_sample_list = list(self.gossip_sample)
+        half = len(gossip_sample_list) // 2
+        first_half = gossip_sample_list[:half]
+        second_half = gossip_sample_list[half:]
+
+        # Send first message to the first half
+        for target in first_half:
+            self.node.send(target, "Gossip", message1, self.node, self.channel_id)
+
+        # Send second message to the second half
+        for target in second_half:
+            self.node.send(target, "Gossip", message2, self.node, self.channel_id)
+
+    def byz_handle(self, event, source, message1="A", message2="B"):
+        if event == "Broadcast":
+            logging.info(f"{self.node} -> {event}: <{message1}>  -> Channel: <{self.channel_id[:4]}..>")#
+            logging.info(f"{self.node} -> {event}: <{message2}>  -> Channel: <{self.channel_id[:4]}..>")#
+            self.byz_dispatch(message1, message2)
 
         elif event == "GossipSubscribe":
             #print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
@@ -38,7 +68,8 @@ class GossipBroadcast:
             self.gossip_sample.add(source)
 
         elif event == "Gossip":
-            self.dispatch(message)
+            #print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            self.byz_dispatch(message1, message2)
 
     def __repr__(self):
         return f"GB({self.channel_id[:4]})"

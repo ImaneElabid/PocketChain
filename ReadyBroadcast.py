@@ -17,8 +17,8 @@ class ReadyBroadcast:
         self.ready_replies = {}
         self.delivery_replies = {}
         self.channel_id = channel_id
+
         self.echo_layer = echo_layer
-        #self.init()
 
     def init(self):
         self.echo_layer.init()
@@ -33,10 +33,11 @@ class ReadyBroadcast:
 
     def handle(self, event, message, source):
         if event == "delivered an echo":
-            # print(f"{self.node} -> {event}: <{message}>  -> CH#'{self.channel_id[:4]}..'")#
+            # print(f"{self.node} -> {event}: <{message}>  -> Channel: <{self.channel_id[:4]}..>")#
             self.ready.add(message)
             for node in self.ready_subscribe_sample:
                 self.node.send(node, "Ready", message, self.node, self.channel_id)
+
         elif event == "ReadySubscribe":
             # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             for message in self.ready:
@@ -44,7 +45,7 @@ class ReadyBroadcast:
             self.ready_subscribe_sample.add(source)
 
         elif event == "Ready":
-            # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            # print(f"{self.node} -> {event}: <{message}> == <{self.channel_id[:4]}..>")#
             if source in self.ready_sample:
                 if message not in self.ready_replies[source]:
                     self.ready_replies[source].add(message)
@@ -52,18 +53,18 @@ class ReadyBroadcast:
             if source in self.delivery_sample:
                 # Add the reply only if it's not already present
                 if message not in self.delivery_replies[source]:
+                    # print(f"{self.node} -> {event}: <{message}> == <{self.channel_id[:4]}..> DELIVERY SET from {source}")  #
                     self.delivery_replies[source].add(message)
                 self.check_delivery(message)
-
         elif event == "achieved consensus":
-            print(f"{self.node} -> {event}: <{message}> ")#
-
-
+            # print(f"{self.node} -> {event}: <{message}> ")  #
+            pass
 
     def check_ready(self, message):
         # if message not in self.ready:
         ready_count = sum(1 for reply in self.ready_replies.values() if message in reply)
         if ready_count >= Param.R_tilda and not self.delivered and not self.already_executed_flag:
+            # print(f"{self.node} -> got enough ready.:")
             self.already_executed_flag = True
             self.ready.add(message)
             self.ready_delivered = True
@@ -75,8 +76,62 @@ class ReadyBroadcast:
         delivery_count = sum(1 for reply in self.delivery_replies.values() if message in reply)
         if delivery_count >= Param.D_tilda and not self.delivered:
             self.delivered = True
-            self.node.receive("achieved consensus", message)
+            self.node.receive("achieved consensus", message, self.node, self.channel_id)
 
+    def byz_handle(self, event, source, message1, message2):
+        if event == "delivered an echo":
+            ready_sample_list = list(self.ready_subscribe_sample)
+            half = len(ready_sample_list) // 2
+            first_half = ready_sample_list[:half]
+            second_half = ready_sample_list[half:]
+
+            for node in first_half:
+                self.node.send(node, "Ready", message1, self.node, self.channel_id)
+
+            for node in second_half:
+                self.node.send(node, "Ready", message2, self.node, self.channel_id)
+
+        elif event == "ReadySubscribe":
+            for message in self.ready:
+                self.node.send(source, "Ready", message, self.node, self.channel_id)
+            self.ready_subscribe_sample.add(source)
+
+        elif event == "Ready":
+            # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
+            if source in self.ready_sample:
+                if message1 not in self.ready_replies[source]:
+                    self.ready_replies[source].add(message1)
+                if message2 not in self.ready_replies[source]:
+                    self.ready_replies[source].add(message2)
+                self.check_byz_ready(message1, message2)
+            if source in self.delivery_sample:
+                # Add the reply only if it's not already present
+                if message1 not in self.delivery_replies[source]:
+                    self.delivery_replies[source].add(message1)
+                if message2 not in self.delivery_replies[source]:
+                    self.delivery_replies[source].add(message2)
+                self.node.receive("achieved consensus", message1, self.node, self.channel_id)
+                self.node.receive("achieved consensus", message2, self.node, self.channel_id)
+
+        elif event == "achieved consensus":
+            print(f"{self.node} -> {event}: <{message1}> ")  #
+            print(f"{self.node} -> {event}: <{message2}> ")  #
+
+    def check_byz_ready(self, message1, message2):
+        # if message not in self.ready:
+        self.ready.add(message1)
+        self.ready.add(message2)
+        self.ready_delivered = True
+        ready_sample_list = list(self.ready_subscribe_sample)
+        half = len(ready_sample_list) // 2
+        first_half = ready_sample_list[:half]
+        second_half = ready_sample_list[half:]
+
+        for node in first_half:
+            self.node.send(node, "Ready", message1, self.node, self.channel_id)
+
+        for node in second_half:
+            self.node.send(node, "Ready", message2, self.node, self.channel_id)
 
     def __repr__(self):
         return f"RB({self.channel_id[:4]})"

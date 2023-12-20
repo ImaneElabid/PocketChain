@@ -4,44 +4,50 @@ import threading
 import logging
 from Node import Node
 from InputsConfig import InputsConfig as Param
+from Statistics import Statistics as ST
 
 sys.setrecursionlimit(30000)
 random.seed(10)
-logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s --- %(message)s')
+
+
+def create_nodes(total_nodes, byzantine_percentage):
+    byzantine_count = int(total_nodes * byzantine_percentage / 100)
+    nodes = []
+
+    for i in range(total_nodes):
+        if i < byzantine_count:
+            nodes.append(Node(i, byzantine=True))
+        else:
+            nodes.append(Node(i))
+    # Shuffle the list so that Byzantine nodes are randomly distributed
+    random.shuffle(nodes)
+    return nodes
+
 
 if __name__ == "__main__":
-    logging.info(f"# of nodes: {Param.N}")
-    logging.info(f"# of neighbors: {Param.G}")
+    logging.info(f"# of nodes: {Param.Total_nodes} with {Param.G} neighbors.")
 
-    Param.all_nodes = [Node(i) for i in range(Param.N)]
+    Param.all_nodes = create_nodes(Param.Total_nodes, Param.byzantine_percentage)
 
+    # Select sender
     sender = random.choice(Param.all_nodes)
-    print(f"{sender} is broadcasting....")
-    message1 = f"Hello"
-    message2 = f"Bye"
-    messages= [message1,message2]
+    logging.info(f"Sender is: {sender}")
+    # message2 = f"Bye"
+    # messages = [message1, message2]
 
     threads = []
-    for m in messages:
-        for node in Param.all_nodes:
-            thread = threading.Thread(target=node.create_and_broadcast, args=(m, sender,))
-            threads.append(thread)
-            thread.start()
+    for node in Param.all_nodes:
+        thread = threading.Thread(target=node.create_and_broadcast, args=(sender,))
+        threads.append(thread)
+        thread.start()
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
 
-        # Wait for all threads to complete
-        for thread in threads:
-            thread.join()
+
+
 
     # Display messages
-    # Check how many nodes received the message
-    # g_delivered_count = sum(1 for node in Param.all_nodes if node.gossip_layer.gossip)
-    # e_delivered_count = sum(1 for node in Param.all_nodes if node.echo_layer.echo_delivered)
-    # r_delivered_count = sum(1 for node in Param.all_nodes if node.ready_layer.ready_delivered)
-    # delivered_count = sum(1 for node in Param.all_nodes if node.ready_layer.delivered)
-    # # print(f"XXXXXX {len([node.id for node in nodes if not node.gossip_delivered])} nodes couldn't deliver XXXXXX")
-    # print(f"{g_delivered_count} / {Param.N} nodes gossiped the message")
-    # print(f"{e_delivered_count} / {Param.N} nodes echoed the message")
-    # print(f"{r_delivered_count} / {Param.N} nodes readied the message")
-    # print(f"{delivered_count} / {Param.N} nodes delivered the message")
-    # if delivered_count < Param.N:
-    #     logging.warning("Not all nodes have successfully delivered the message")
+    ST.display()

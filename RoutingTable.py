@@ -2,6 +2,7 @@ from EchoBroadcast import EchoBroadcast
 from GossipBroadcast import GossipBroadcast
 from ReadyBroadcast import ReadyBroadcast
 from InputsConfig import Map
+import time
 
 
 class RoutingTable:
@@ -14,7 +15,7 @@ class RoutingTable:
         gossip_layer = GossipBroadcast(self.node, channel_id)
         echo_layer = EchoBroadcast(self.node, gossip_layer, channel_id)
         ready_layer = ReadyBroadcast(self.node, echo_layer, channel_id)
-        channel = Map({'gossip_layer': gossip_layer, 'echo_layer': echo_layer, 'ready_layer': ready_layer})
+        channel = Map({'gossip_layer': gossip_layer, 'echo_layer': echo_layer, 'ready_layer': ready_layer, 'delivered': False})
         self.table[channel_id] = channel
         ready_layer.init()
         return channel
@@ -23,6 +24,7 @@ class RoutingTable:
         """Remove an instance from the routing table."""
         if h_id in self.table:
             del self.table[h_id]
+        print(self.table)
 
     def get_channel(self, h_id):
         """Retrieve an instance from the routing table."""

@@ -1,30 +1,69 @@
 import math
 import hashlib
 import random
+import sys
 import time
+import json
+sys.setrecursionlimit(1000000)
 
 
 class InputsConfig:
-    N = 100  # Number of nodes
-    G = math.ceil(math.log(N))  # Expected gossip sample size
+    # Nodes parameters
+    Total_nodes = 100  # Number of nodes
+    byzantine_percentage = 0  # Percentage of Byzantine nodes
+    all_nodes = []  # List of nodes
+
+    # Broadcast parameters
+    G = math.ceil((Total_nodes/10))  # Expected gossip sample size
     E = G  # echo sample size
     R = G  # Ready sample size
     D = G  # Delivery sample size
     E_tilda = G  # Echo threshold
     R_tilda = G  # Ready threshold
     D_tilda = G  # Delivery threshold
-    all_nodes = []  # List of nodes
 
-    # Sampling oracle
+    # tx parameters
+    Tdelay = 5.1
+    Tfee = 0.000062  # The average transaction fee
+    Tsize = 0.000546  # The average transaction size  in MB
+    Default_Psize = 1
+
+    # block parameters
+    Bsize = 1.0  # The block size in MB
+    Bdelay = 0.42  # average block propogation delay in seconds
+
     def omega(all_nodes, size):
+        """Sampling oracle"""
         return random.sample(all_nodes, int(size))
 
-    # hash code for virtual broadcast channel
     def hid(id):
-        # Generate a unique hash ID based on node ID, timestamp, and a random component
+        """hash code as an id for the virtual broadcast channel"""
         raw_id = f"{id}-{time.time()}-{random.random()}"
         return hashlib.sha256(id.encode()).hexdigest()
 
+    @staticmethod
+    def get_hash(message):
+        """Return sha256 of the given message"""
+        return hashlib.sha256(message.encode()).hexdigest()
+
+    # def compute_hash(x: list):
+    #     """Compute the hash of a list of elements
+    #         --> prev_hash: [S, X, Y]
+    #         --> state: [X, Y]
+    #     """
+    #     message = ""
+    #     for i in x:
+    #         if isinstance(i, list):
+    #             if len(i) > 0 and hasattr(i[0], 'value'):
+    #                 message += json.dumps([trans.value for trans in i], sort_keys=True)
+    #         elif isinstance(i, int):
+    #             # message += json.dumps([str(i)], sort_keys=True)
+    #             message += str(i)
+    #         else:
+    #             message += i
+    #         dd = get_hash(message)
+    #         # print(f">> Hash: {get_hash(message)} ---> {message}")
+    #     return dd
 
 class Map(dict):
     """
@@ -59,3 +98,4 @@ class Map(dict):
     def __delitem__(self, key):
         super(Map, self).__delitem__(key)
         del self.__dict__[key]
+
