@@ -1,6 +1,4 @@
-import logging
-
-from InputsConfig import InputsConfig as Param
+from Config.InputsConfig import InputsConfig as Param
 
 
 class ReadyBroadcast:
@@ -28,8 +26,8 @@ class ReadyBroadcast:
         self.delivery_sample = self.node.sample_and_send("ReadySubscribe", Param.D, self.channel_id)
         self.delivery_replies = {node_id: set() for node_id in self.delivery_sample}
 
-    def broadcast(self, message):
-        self.echo_layer.broadcast(message)
+    def broadcast(self, block):
+        self.echo_layer.broadcast(block)
 
     def handle(self, event, message, source):
         if event == "delivered an echo":
@@ -76,9 +74,9 @@ class ReadyBroadcast:
         delivery_count = sum(1 for reply in self.delivery_replies.values() if message in reply)
         if delivery_count >= Param.D_tilda and not self.delivered:
             self.delivered = True
-            self.node.receive("achieved consensus", message, self.node, self.channel_id)
+            self.node.receive("achieved consensus", message, source=self.node, hid=self.channel_id)
 
-    def byz_handle(self, event, source, message1, message2):
+    def byz_handle(self, event, source, block1, block2):
         if event == "delivered an echo":
             ready_sample_list = list(self.ready_subscribe_sample)
             half = len(ready_sample_list) // 2
@@ -86,10 +84,10 @@ class ReadyBroadcast:
             second_half = ready_sample_list[half:]
 
             for node in first_half:
-                self.node.send(node, "Ready", message1, self.node, self.channel_id)
+                self.node.send(node, "Ready", block1, self.node, self.channel_id)
 
             for node in second_half:
-                self.node.send(node, "Ready", message2, self.node, self.channel_id)
+                self.node.send(node, "Ready", block2, self.node, self.channel_id)
 
         elif event == "ReadySubscribe":
             for message in self.ready:
@@ -99,23 +97,23 @@ class ReadyBroadcast:
         elif event == "Ready":
             # print(f"{self.node} -> {event}: <{message}> == {self.channel_id}")#
             if source in self.ready_sample:
-                if message1 not in self.ready_replies[source]:
-                    self.ready_replies[source].add(message1)
-                if message2 not in self.ready_replies[source]:
-                    self.ready_replies[source].add(message2)
-                self.check_byz_ready(message1, message2)
+                if block1 not in self.ready_replies[source]:
+                    self.ready_replies[source].add(block1)
+                if block2 not in self.ready_replies[source]:
+                    self.ready_replies[source].add(block2)
+                self.check_byz_ready(block1, block2)
             if source in self.delivery_sample:
                 # Add the reply only if it's not already present
-                if message1 not in self.delivery_replies[source]:
-                    self.delivery_replies[source].add(message1)
-                if message2 not in self.delivery_replies[source]:
-                    self.delivery_replies[source].add(message2)
-                self.node.receive("achieved consensus", message1, self.node, self.channel_id)
-                self.node.receive("achieved consensus", message2, self.node, self.channel_id)
+                if block1 not in self.delivery_replies[source]:
+                    self.delivery_replies[source].add(block1)
+                if block2 not in self.delivery_replies[source]:
+                    self.delivery_replies[source].add(block2)
+                self.node.receive("achieved consensus", block1, source=self.node, hid=self.channel_id)
+                self.node.receive("achieved consensus", block2, source=self.node, hid=self.channel_id)
 
         elif event == "achieved consensus":
-            print(f"{self.node} -> {event}: <{message1}> ")  #
-            print(f"{self.node} -> {event}: <{message2}> ")  #
+            print(f"{self.node} -> {event}: <{block1}> ")  #
+            print(f"{self.node} -> {event}: <{block2}> ")  #
 
     def check_byz_ready(self, message1, message2):
         # if message not in self.ready:

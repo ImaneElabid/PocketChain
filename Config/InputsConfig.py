@@ -3,7 +3,7 @@ import hashlib
 import random
 import sys
 import time
-import json
+
 sys.setrecursionlimit(1000000)
 
 
@@ -14,7 +14,7 @@ class InputsConfig:
     all_nodes = []  # List of nodes
 
     # Broadcast parameters
-    G = math.ceil((Total_nodes/10))  # Expected gossip sample size
+    G = math.ceil((Total_nodes / 10))  # Expected gossip sample size
     E = G  # echo sample size
     R = G  # Ready sample size
     D = G  # Delivery sample size
@@ -28,9 +28,12 @@ class InputsConfig:
     Tsize = 0.000546  # The average transaction size  in MB
     Default_Psize = 1
 
+    Shared_pool = None
     # block parameters
-    Bsize = 1.0  # The block size in MB
+    Bsize = 2  # nbr of tx  >>>> The block size in MB
     Bdelay = 0.42  # average block propogation delay in seconds
+    BlockInterval = 0.1
+    BlockchainSize = 1  # + genesis block
 
     def omega(all_nodes, size):
         """Sampling oracle"""
@@ -39,31 +42,12 @@ class InputsConfig:
     def hid(id):
         """hash code as an id for the virtual broadcast channel"""
         raw_id = f"{id}-{time.time()}-{random.random()}"
-        return hashlib.sha256(id.encode()).hexdigest()
+        return hashlib.sha256(raw_id.encode()).hexdigest()
 
     @staticmethod
     def get_hash(message):
         """Return sha256 of the given message"""
         return hashlib.sha256(message.encode()).hexdigest()
-
-    # def compute_hash(x: list):
-    #     """Compute the hash of a list of elements
-    #         --> prev_hash: [S, X, Y]
-    #         --> state: [X, Y]
-    #     """
-    #     message = ""
-    #     for i in x:
-    #         if isinstance(i, list):
-    #             if len(i) > 0 and hasattr(i[0], 'value'):
-    #                 message += json.dumps([trans.value for trans in i], sort_keys=True)
-    #         elif isinstance(i, int):
-    #             # message += json.dumps([str(i)], sort_keys=True)
-    #             message += str(i)
-    #         else:
-    #             message += i
-    #         dd = get_hash(message)
-    #         # print(f">> Hash: {get_hash(message)} ---> {message}")
-    #     return dd
 
 class Map(dict):
     """
@@ -99,3 +83,30 @@ class Map(dict):
         super(Map, self).__delitem__(key)
         del self.__dict__[key]
 
+
+import logging
+
+class CustomFormatter(logging.Formatter):
+    """Logging Formatter to add colors and count warning / errors"""
+    SUCCESS_LEVEL_NUM = 25
+    logging.addLevelName(SUCCESS_LEVEL_NUM, 'SUCCESS')
+    grey = "\x1b[38;21m"
+    green = "\x1b[32;21m"
+    yellow = "\x1b[33;21m"
+    red = "\x1b[31;21m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    format = "[%(levelname)s] - %(message)s"
+
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: green + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: bold_red + format + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)

@@ -1,8 +1,7 @@
-from EchoBroadcast import EchoBroadcast
-from GossipBroadcast import GossipBroadcast
-from ReadyBroadcast import ReadyBroadcast
-from InputsConfig import Map
-import time
+from Broadcast.EchoBroadcast import EchoBroadcast
+from Broadcast.GossipBroadcast import GossipBroadcast
+from Broadcast.ReadyBroadcast import ReadyBroadcast
+from Config.InputsConfig import Map
 
 
 class RoutingTable:
